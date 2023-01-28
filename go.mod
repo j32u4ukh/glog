@@ -1,4 +1,4 @@
-module glog
+module github.com/j32u4ukh/glog
 
 go 1.18
 

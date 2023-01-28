@@ -1,8 +1,9 @@
 package main
 
 import (
-	"glog"
 	"time"
+
+	"github.com/j32u4ukh/glog"
 )
 
 func main() {
