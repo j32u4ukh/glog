@@ -40,7 +40,7 @@ func (o *basicOption) SetOption(logger *Logger) {
 
 	if o.ToFile {
 		state |= TOFILE
-		logger.SetShiftCondition(ShiftDay, 1, 1024)
+		logger.SetShiftCondition(ShiftDayAndSize, 1, 10*MB)
 	} else {
 		state &^= TOFILE
 	}

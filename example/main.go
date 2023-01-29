@@ -1,8 +1,6 @@
 package main
 
 import (
-	"time"
-
 	"github.com/j32u4ukh/glog"
 )
 
@@ -13,10 +11,10 @@ func main() {
 	logger.SetOptions(option1, option2)
 	logger.SetLogLevel(glog.DebugLevel)
 
-	for t := 0; t < 4; t++ {
+	for t := 0; t < 50000; t++ {
 		logger.Debug("Hello Debug! t: %d", t)
 		logger.Info("Hello Info! t: %d", t)
-		time.Sleep(1 * time.Second)
+		// time.Sleep(1 * time.Second)
 	}
 
 	print(logger)
@@ -24,6 +22,15 @@ func main() {
 	obj := newObj()
 	obj.print("Hello Obj!")
 	glog.Flush()
+
+	// fi, err := os.Stat("log/not-struct-2023-01-29-00-00.log")
+	// if err == nil {
+	// 	fmt.Println("name:", fi.Name())
+	// 	fmt.Println("size:", fi.Size())
+	// 	fmt.Println("is dir:", fi.IsDir())
+	// 	fmt.Println("mode::", fi.Mode())
+	// 	fmt.Println("modTime:", fi.ModTime())
+	// }
 }
 
 func print(logger *glog.Logger) {

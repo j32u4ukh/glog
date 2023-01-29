@@ -40,6 +40,18 @@ const (
 )
 
 // ====================================================================================================
+// 檔案大小轉換(單位：Byte)
+// ====================================================================================================
+const (
+	KB int64 = 1024
+	MB int64 = 1024 * KB
+	GB int64 = 1024 * MB
+	TB int64 = 1024 * GB
+	PB int64 = 1024 * TB
+	EB int64 = 1024 * PB
+)
+
+// ====================================================================================================
 // LogLevel
 // ====================================================================================================
 type LogLevel int
@@ -287,6 +299,10 @@ func (l *Logger) getFilePath() string {
 				if file.IsDir() {
 					continue
 				} else if fileName == file.Name() {
+					// TODO: 初始化輸出時，尚未獲得檔案大小，因此 whetherNeedUpdateOutputs 無法正確判斷
+					// if l.whetherNeedUpdateOutputs("") {
+					// 	isValidName = false
+					// }
 					isValidName = false
 					break
 				}
@@ -403,7 +419,7 @@ func (l *Logger) initOutput() error {
 	if err == nil {
 		// 更新累積檔案大小
 		l.cumSize = stat.Size()
-		// fmt.Printf("(l *Logger) initOutput | cumSize: %d\n", l.cumSize)
+		fmt.Printf("(l *Logger) initOutput | cumSize: %d, filePath: %s\n", l.cumSize, filePath)
 	}
 
 	l.files[0], err = os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
@@ -434,7 +450,7 @@ func (l *Logger) whetherNeedUpdateOutputs(output string) bool {
 		needUpdate := l.getTime().After(l.date)
 
 		if needUpdate {
-			// fmt.Println("(l *Logger) whetherNeedUpdateOutputs | 因已達時間間隔，即將換檔")
+			fmt.Println("(l *Logger) whetherNeedUpdateOutputs | 因已達時間間隔，即將換檔")
 			switch l.shiftType {
 			case ShiftDay, ShiftDayAndSize:
 				l.setDaysInterval(l.timeInterval)
@@ -448,7 +464,7 @@ func (l *Logger) whetherNeedUpdateOutputs(output string) bool {
 			case ShiftDayAndSize, ShiftHourAndSize, ShiftSecondAndSize:
 				// 當前大小超過已超過大小限制
 				if l.cumSize >= l.sizeLimit {
-					// fmt.Println("(l *Logger) whetherNeedUpdateOutputs | 因已達大小限制，即將換檔")
+					fmt.Println("(l *Logger) whetherNeedUpdateOutputs | 因已達大小限制，即將換檔")
 					// 重置累加大小
 					l.cumSize = 0
 					needUpdate = true
