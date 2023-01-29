@@ -260,7 +260,7 @@ func (l *Logger) Logout(level LogLevel, message string) error {
 	}
 
 	pc, file, line, ok := runtime.Caller(2)
-	timeStamp := time.Now().Format(DISPLAYTIME)
+	timeStamp := time.Now().UTC().Format(DISPLAYTIME)
 	var output string
 
 	if ok {
