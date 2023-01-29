@@ -16,10 +16,13 @@ import (
 // 時間輸出格式
 const DISPLAYTIME string = "2006/01/02 15:04:05"
 
-// 檔名時間格式
-const FILENAMETIME string = "2006-01-02-15-04-05"
+// 檔名時間格式，間隔時間類型為 Second 的設置只在開發期間使用，因此檔名時間格式精細度到分鐘即可
+const FILENAMETIME string = "2006-01-02-15-04"
 
-//
+// 是否輸出到 Console 或 輸出成檔案，由低位到高位，以二進制分別表示
+// 1. 是否輸出到 Console
+// 2. 是否輸出成檔案
+// 3. 是否輸出行數資訊
 const TOCONSOLE int = 0b001
 const TOFILE int = 0b010
 const FILEINFO int = 0b100
@@ -87,10 +90,6 @@ type Logger struct {
 	// ==================================================
 	// 各個 Level 的設定
 	// ==================================================
-	// 是否輸出到 Console 或 輸出成檔案，由低位到高位，以二進制分別表示
-	// 1. 是否輸出到 Console
-	// 2. 是否輸出成檔案
-	// 3. 是否輸出行數資訊
 	outputs map[LogLevel]int
 
 	// ==================================================
@@ -126,6 +125,7 @@ type Logger struct {
 	cumSize int64
 }
 
+// TODO: v2.0.0 時，將 callByStruct 移除
 func newLogger(folder string, loggerName string, level LogLevel, callByStruct bool, options ...Option) *Logger {
 	l := &Logger{
 		folder:     folder,
@@ -147,10 +147,7 @@ func newLogger(folder string, loggerName string, level LogLevel, callByStruct bo
 		cumSize:      0,
 	}
 
-	// 根據各個 Option 調整 Logger 參數
-	for _, option := range options {
-		option.SetOption(l)
-	}
+	l.SetOptions(options...)
 
 	// 檢查是否有輸出到檔案需求，若有，則檢查輸出資料夾是否存在。若資料夾不存在，則產生。
 	for _, state := range l.outputs {
@@ -160,6 +157,14 @@ func newLogger(folder string, loggerName string, level LogLevel, callByStruct bo
 		}
 	}
 	return l
+}
+
+// 可在建構子之外，設置 Logger 各項參數
+func (l *Logger) SetOptions(options ...Option) {
+	// 根據各個 Option 調整 Logger 參數
+	for _, option := range options {
+		option.SetOption(l)
+	}
 }
 
 // 設置 Log 輸出等級
@@ -190,8 +195,8 @@ func (l *Logger) SetDaysInterval(days int64) {
 	// 標註間隔時間類型為 Day
 	l.intervalType = IntervalDay
 
-	now := time.Now()
-	date := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, nil).UTC()
+	now := time.Now().UTC()
+	date := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location()).UTC()
 	l.date = date.Add(time.Duration(l.timeInterval * DayToNano))
 }
 
@@ -209,8 +214,8 @@ func (l *Logger) SetHourInterval(hour int64) {
 	// 標註間隔時間類型為 Hour
 	l.intervalType = IntervalHour
 
-	now := time.Now()
-	date := time.Date(now.Year(), now.Month(), now.Day(), now.Hour(), 0, 0, 0, nil).UTC()
+	now := time.Now().UTC()
+	date := time.Date(now.Year(), now.Month(), now.Day(), now.Hour(), 0, 0, 0, nil)
 	l.date = date.Add(time.Duration(l.timeInterval * HourToNano))
 }
 
@@ -228,8 +233,7 @@ func (l *Logger) setIntervalSencod(second int64) {
 }
 
 func (l *Logger) getFilePath() string {
-	// 間隔時間類型為 Second 的設置只在開發期間使用，因此檔名時間格式精細度到分鐘即可
-	timeStamp := time.Now().Format(FILENAMETIME)
+	timeStamp := time.Now().UTC().Format(FILENAMETIME)
 	filePath := path.Join(l.folder, fmt.Sprintf("%s-%s.log", l.loggerName, timeStamp))
 	return filePath
 }
