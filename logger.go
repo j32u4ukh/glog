@@ -24,7 +24,20 @@ const TOCONSOLE int = 0b001
 const TOFILE int = 0b010
 const FILEINFO int = 0b100
 
-// log level
+// ====================================================================================================
+// 時間轉換
+// ====================================================================================================
+const (
+	SecondToNano int64 = 1e9
+	HourToSecond int64 = 3600
+	HourToNano   int64 = HourToSecond * SecondToNano
+	DayToSecond  int64 = 24 * HourToSecond
+	DayToNano    int64 = 24 * HourToNano
+)
+
+// ====================================================================================================
+// LogLevel
+// ====================================================================================================
 type LogLevel int
 
 const (
@@ -49,12 +62,19 @@ func (l LogLevel) String() string {
 	}
 }
 
+// ====================================================================================================
+// IntervalType
+// ====================================================================================================
+
 const (
-	SecondToNano int64 = 1e9
-	HourToSecond int64 = 3600
-	HourToNano   int64 = HourToSecond * SecondToNano
-	DayToNano    int64 = 24 * HourToNano
+	IntervalSecond byte = iota
+	IntervalHour
+	IntervalDay
 )
+
+// ====================================================================================================
+// Logger
+// ====================================================================================================
 
 type Logger struct {
 	// 輸出資料夾
@@ -87,8 +107,13 @@ type Logger struct {
 	// 讀寫鎖
 	mu sync.RWMutex
 
+	// ==================================================
+	// Log 換檔相關
+	// ==================================================
+
 	// ===== Log 時間管理 =====
-	// Log 檔更新輸出位置的時間間隔(單位：小時)，超過後更新輸出位置
+	// 換檔類型: Log 檔更新輸出位置的時間間隔(單位：小時)，超過後更新輸出位置
+	intervalType byte
 	// time.Duration 的上限為 2540400 小時，超過的話直接設為 2540400
 	timeInterval int64
 	// 換檔時間戳
@@ -115,7 +140,9 @@ func newLogger(folder string, loggerName string, level LogLevel, callByStruct bo
 		writers:      make([]*bufio.Writer, 2),
 		bufferSize:   4096,
 		files:        make([]*os.File, 2),
+		intervalType: IntervalDay,
 		timeInterval: -1,
+		date:         time.Now(),
 		sizeLimit:    -1,
 		cumSize:      0,
 	}
@@ -150,48 +177,58 @@ func (l *Logger) SetBufferSize(size uint16) {
 }
 
 // 設置 Log 檔更新輸出位置的時間間隔，超過後更新輸出位置
-func (l *Logger) SetHourInterval(hour int32) {
-	if hour <= 0 {
-		l.timeInterval = -1
-		return
-	} else if 2540400 < hour {
-		l.timeInterval = int64(hour)
-	} else {
-		l.timeInterval = 2540400
-	}
-
-	now := time.Now()
-	date := time.Date(now.Year(), now.Month(), now.Day(), now.Hour(), 0, 0, 0, nil).UTC()
-	l.date = date.Add(time.Duration(l.timeInterval * HourToNano))
-}
-
-// 設置 Log 檔更新輸出位置的時間間隔，超過後更新輸出位置
-func (l *Logger) SetDaysInterval(days int32) {
+func (l *Logger) SetDaysInterval(days int64) {
 	if days <= 0 {
 		l.timeInterval = -1
 		return
 	} else if 105850 < days {
-		l.timeInterval = int64(days)
+		l.timeInterval = days
 	} else {
 		l.timeInterval = 105850
 	}
+
+	// 標註間隔時間類型為 Day
+	l.intervalType = IntervalDay
 
 	now := time.Now()
 	date := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, nil).UTC()
 	l.date = date.Add(time.Duration(l.timeInterval * DayToNano))
 }
 
-func (l *Logger) SetIntervalSencod(second int64) {
+// 設置 Log 檔更新輸出位置的時間間隔，超過後更新輸出位置
+func (l *Logger) SetHourInterval(hour int64) {
+	if hour <= 0 {
+		l.timeInterval = -1
+		return
+	} else if 2540400 < hour {
+		l.timeInterval = hour
+	} else {
+		l.timeInterval = 2540400
+	}
+
+	// 標註間隔時間類型為 Hour
+	l.intervalType = IntervalHour
+
+	now := time.Now()
+	date := time.Date(now.Year(), now.Month(), now.Day(), now.Hour(), 0, 0, 0, nil).UTC()
+	l.date = date.Add(time.Duration(l.timeInterval * HourToNano))
+}
+
+func (l *Logger) setIntervalSencod(second int64) {
 	if second <= 0 {
 		l.timeInterval = -1
 		return
 	} else {
 		l.timeInterval = second
 	}
-	l.date = time.Now().Add(time.Duration(l.timeInterval * SecondToNano))
+
+	// 標註間隔時間類型為 Second
+	l.intervalType = IntervalSecond
+	l.date = l.date.Add(time.Duration(l.timeInterval * SecondToNano))
 }
 
 func (l *Logger) getFilePath() string {
+	// 間隔時間類型為 Second 的設置只在開發期間使用，因此檔名時間格式精細度到分鐘即可
 	timeStamp := time.Now().Format(FILENAMETIME)
 	filePath := path.Join(l.folder, fmt.Sprintf("%s-%s.log", l.loggerName, timeStamp))
 	return filePath
@@ -225,24 +262,19 @@ func (l *Logger) Logout(level LogLevel, message string) error {
 	if ok {
 		funcName := runtime.FuncForPC(pc).Name()
 		names := strings.Split(funcName, ".")
+		var label string
 
 		if len(names) == 2 {
-			if l.outputs[level]&FILEINFO == FILEINFO {
-				output = fmt.Sprintf("%s %s | [%s] %s | %s | %s (%d)\n",
-					timeStamp, level, l.loggerName, names[1], message, file, line)
-			} else {
-				output = fmt.Sprintf("%s %s | [%s] %s | %s\n",
-					timeStamp, level, l.loggerName, names[1], message)
-			}
+			label = fmt.Sprintf("[%s] %s", names[0], names[1])
 		} else {
-			if l.outputs[level]&FILEINFO == FILEINFO {
-				output = fmt.Sprintf("%s %s | [%s] %s | %s | %s (%d)\n",
-					timeStamp, level, l.loggerName, names[2], message, file, line)
-			} else {
-				output = fmt.Sprintf("%s %s | [%s] %s | %s\n",
-					timeStamp, level, l.loggerName, names[2], message)
-			}
+			label = fmt.Sprintf("[%s] %s", names[1], names[2])
 		}
+
+		if l.outputs[level]&FILEINFO == FILEINFO {
+			message = fmt.Sprintf("%s | %s (%d)", message, file, line)
+		}
+
+		output = fmt.Sprintf("%s %s | %s | %s\n", timeStamp, level, label, message)
 	} else {
 		output = fmt.Sprintf("%s %s | %s\n", timeStamp, level, message)
 	}
@@ -301,7 +333,14 @@ func (l *Logger) whetherNeedUpdateOutputs(output string) bool {
 		needUpdate = time.Now().After(l.date)
 
 		if needUpdate {
-			l.SetIntervalSencod(l.timeInterval)
+			switch l.intervalType {
+			case IntervalDay:
+				l.SetDaysInterval(l.timeInterval)
+			case IntervalHour:
+				l.SetHourInterval(l.timeInterval)
+			case IntervalSecond:
+				l.setIntervalSencod(l.timeInterval)
+			}
 		}
 	}
 

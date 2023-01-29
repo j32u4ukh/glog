@@ -40,7 +40,7 @@ func (o *basicOption) SetOption(logger *Logger) {
 
 	if o.ToFile {
 		state |= TOFILE
-		logger.SetIntervalSencod(5)
+		logger.SetDaysInterval(1)
 	} else {
 		state &^= TOFILE
 	}
