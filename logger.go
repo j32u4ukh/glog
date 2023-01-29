@@ -132,10 +132,10 @@ func newLogger(folder string, loggerName string, level LogLevel, callByStruct bo
 		loggerName: loggerName,
 		level:      level,
 		outputs: map[LogLevel]int{
-			DebugLevel: 1,
-			InfoLevel:  1,
-			WarnLevel:  0b111,
-			ErrorLevel: 0b111,
+			DebugLevel: TOCONSOLE | FILEINFO,
+			InfoLevel:  TOCONSOLE | FILEINFO,
+			WarnLevel:  TOCONSOLE | TOFILE | FILEINFO,
+			ErrorLevel: TOCONSOLE | TOFILE | FILEINFO,
 		},
 		writers:      make([]*bufio.Writer, 2),
 		bufferSize:   4096,
@@ -148,14 +148,6 @@ func newLogger(folder string, loggerName string, level LogLevel, callByStruct bo
 	}
 
 	l.SetOptions(options...)
-
-	// 檢查是否有輸出到檔案需求，若有，則檢查輸出資料夾是否存在。若資料夾不存在，則產生。
-	for _, state := range l.outputs {
-		if state&TOFILE == TOFILE {
-			l.initOutput()
-			break
-		}
-	}
 	return l
 }
 
@@ -164,6 +156,14 @@ func (l *Logger) SetOptions(options ...Option) {
 	// 根據各個 Option 調整 Logger 參數
 	for _, option := range options {
 		option.SetOption(l)
+	}
+
+	// 檢查是否有輸出到檔案需求，若有，則檢查輸出資料夾是否存在。若資料夾不存在，則產生。
+	for _, state := range l.outputs {
+		if state&TOFILE == TOFILE {
+			l.initOutput()
+			break
+		}
 	}
 }
 

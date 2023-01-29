@@ -53,3 +53,34 @@ func (o *basicOption) SetOption(logger *Logger) {
 
 	logger.outputs[o.Level] = state
 }
+
+type defaultOption struct {
+	debugToFile bool
+	infoToFile  bool
+}
+
+func DefaultOption(debugToFile bool, infoToFile bool) *defaultOption {
+	o := &defaultOption{
+		debugToFile: debugToFile,
+		infoToFile:  infoToFile,
+	}
+	return o
+}
+
+func (o *defaultOption) SetOption(logger *Logger) {
+	if o.debugToFile {
+		logger.outputs[DebugLevel] |= TOFILE
+	} else {
+		logger.outputs[DebugLevel] &^= TOFILE
+	}
+
+	if o.infoToFile {
+		logger.outputs[InfoLevel] |= TOFILE
+	} else {
+		logger.outputs[InfoLevel] &^= TOFILE
+	}
+
+	if o.debugToFile || o.infoToFile {
+		logger.SetDaysInterval(1)
+	}
+}

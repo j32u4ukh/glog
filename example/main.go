@@ -7,11 +7,11 @@ import (
 )
 
 func main() {
-	option1 := glog.BasicOption(glog.DebugLevel, true, true, true)
-	option2 := glog.BasicOption(glog.InfoLevel, true, true, true)
 	logger := glog.GetLogger("log", "not-struct", glog.DebugLevel, false)
-	logger.SetOptions(option1, option2)
-	logger.SetLogLevel(glog.InfoLevel)
+	// option1 := glog.BasicOption(glog.DebugLevel, true, true, true)
+	// option2 := glog.BasicOption(glog.InfoLevel, true, true, true)
+	logger.SetOptions(glog.DefaultOption(false, true))
+	logger.SetLogLevel(glog.DebugLevel)
 
 	for t := 0; t < 12; t++ {
 		logger.Debug("Hello Debug! t: %d", t)
