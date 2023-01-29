@@ -1,21 +1,22 @@
 package main
 
 import (
+	"time"
+
 	"github.com/j32u4ukh/glog"
 )
 
 func main() {
 	logger := glog.GetLogger("log", "not-struct", glog.DebugLevel, false)
-	// option1 := glog.BasicOption(glog.DebugLevel, true, true, true)
-	// option2 := glog.BasicOption(glog.InfoLevel, true, true, true)
-	logger.SetOptions(glog.DefaultOption(false, true), glog.UtcOption(8))
+	option1 := glog.BasicOption(glog.DebugLevel, false, true, true)
+	option2 := glog.BasicOption(glog.InfoLevel, false, true, true)
+	logger.SetOptions(option1, option2)
 	logger.SetLogLevel(glog.DebugLevel)
 
-	for t := 0; t < 12; t++ {
+	for t := 0; t < 4; t++ {
 		logger.Debug("Hello Debug! t: %d", t)
 		logger.Info("Hello Info! t: %d", t)
-		logger.Warn("Hello Warn! t: %d", t)
-		logger.Error("Hello Error! t: %d", t)
+		time.Sleep(1 * time.Second)
 	}
 
 	print(logger)
@@ -28,8 +29,6 @@ func main() {
 func print(logger *glog.Logger) {
 	logger.Debug("print Debug!")
 	logger.Info("print Info!")
-	logger.Warn("print Warn!")
-	logger.Error("print Error!")
 }
 
 type Obj struct {
