@@ -127,7 +127,6 @@ type Logger struct {
 	cumSize int64
 }
 
-// TODO: v2.0.0 時，將 callByStruct 移除
 func newLogger(folder string, loggerName string, level LogLevel, callByStruct bool, options ...Option) *Logger {
 	l := &Logger{
 		folder:     folder,

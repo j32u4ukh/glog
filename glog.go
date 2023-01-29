@@ -4,6 +4,8 @@ import "path"
 
 var loggerMap map[string]*Logger
 
+// TODO: v2.0.0 時，將建構子中的 callByStruct 移除
+// TODO: v2.0.0 時，將建構子中的 options ...Option 移除
 func init() {
 	loggerMap = make(map[string]*Logger)
 }
