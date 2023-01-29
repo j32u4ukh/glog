@@ -86,6 +86,8 @@ type Logger struct {
 	loggerName string
 	// logger 的等級
 	level LogLevel
+	// UTC 時區
+	utc float32
 
 	// ==================================================
 	// 各個 Level 的設定
@@ -131,11 +133,12 @@ func newLogger(folder string, loggerName string, level LogLevel, callByStruct bo
 		folder:     folder,
 		loggerName: loggerName,
 		level:      level,
+		utc:        0,
 		outputs: map[LogLevel]int{
 			DebugLevel: TOCONSOLE | FILEINFO,
 			InfoLevel:  TOCONSOLE | FILEINFO,
-			WarnLevel:  TOCONSOLE | TOFILE | FILEINFO,
-			ErrorLevel: TOCONSOLE | TOFILE | FILEINFO,
+			WarnLevel:  TOCONSOLE | FILEINFO,
+			ErrorLevel: TOCONSOLE | FILEINFO,
 		},
 		writers:      make([]*bufio.Writer, 2),
 		bufferSize:   4096,
@@ -146,8 +149,6 @@ func newLogger(folder string, loggerName string, level LogLevel, callByStruct bo
 		sizeLimit:    -1,
 		cumSize:      0,
 	}
-
-	l.SetOptions(options...)
 	return l
 }
 
@@ -195,8 +196,8 @@ func (l *Logger) SetDaysInterval(days int64) {
 	// 標註間隔時間類型為 Day
 	l.intervalType = IntervalDay
 
-	now := time.Now().UTC()
-	date := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location()).UTC()
+	now := l.getTime()
+	date := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	l.date = date.Add(time.Duration(l.timeInterval * DayToNano))
 }
 
@@ -214,7 +215,7 @@ func (l *Logger) SetHourInterval(hour int64) {
 	// 標註間隔時間類型為 Hour
 	l.intervalType = IntervalHour
 
-	now := time.Now().UTC()
+	now := l.getTime()
 	date := time.Date(now.Year(), now.Month(), now.Day(), now.Hour(), 0, 0, 0, nil)
 	l.date = date.Add(time.Duration(l.timeInterval * HourToNano))
 }
@@ -233,7 +234,7 @@ func (l *Logger) setIntervalSencod(second int64) {
 }
 
 func (l *Logger) getFilePath() string {
-	timeStamp := time.Now().UTC().Format(FILENAMETIME)
+	timeStamp := l.getTime().Format(FILENAMETIME)
 	filePath := path.Join(l.folder, fmt.Sprintf("%s-%s.log", l.loggerName, timeStamp))
 	return filePath
 }
@@ -260,7 +261,7 @@ func (l *Logger) Logout(level LogLevel, message string) error {
 	}
 
 	pc, file, line, ok := runtime.Caller(2)
-	timeStamp := time.Now().UTC().Format(DISPLAYTIME)
+	timeStamp := l.getTime().Format(DISPLAYTIME)
 	var output string
 
 	if ok {
@@ -405,4 +406,14 @@ func (l *Logger) Flush() {
 			l.files[idx].Close()
 		}
 	}
+}
+
+func (l *Logger) getTime() time.Time {
+	var loc *time.Location
+	if l.utc == -4 {
+		loc, _ = time.LoadLocation("America/Nipigon")
+	} else {
+		loc = time.FixedZone("", int(l.utc*60*60))
+	}
+	return time.Now().In(loc)
 }

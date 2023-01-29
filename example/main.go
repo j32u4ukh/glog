@@ -1,8 +1,6 @@
 package main
 
 import (
-	"time"
-
 	"github.com/j32u4ukh/glog"
 )
 
@@ -10,7 +8,7 @@ func main() {
 	logger := glog.GetLogger("log", "not-struct", glog.DebugLevel, false)
 	// option1 := glog.BasicOption(glog.DebugLevel, true, true, true)
 	// option2 := glog.BasicOption(glog.InfoLevel, true, true, true)
-	logger.SetOptions(glog.DefaultOption(false, true))
+	logger.SetOptions(glog.DefaultOption(false, true), glog.UtcOption(8))
 	logger.SetLogLevel(glog.DebugLevel)
 
 	for t := 0; t < 12; t++ {
@@ -18,7 +16,6 @@ func main() {
 		logger.Info("Hello Info! t: %d", t)
 		logger.Warn("Hello Warn! t: %d", t)
 		logger.Error("Hello Error! t: %d", t)
-		time.Sleep(time.Second * 1)
 	}
 
 	print(logger)
