@@ -129,3 +129,18 @@ func (o *utcOption) SetOption(logger *Logger) {
 	}
 	logger.utc = o.utc
 }
+
+type folderOption struct {
+	folder string
+}
+
+func FolderOption(folder string) *folderOption {
+	o := &folderOption{
+		folder: folder,
+	}
+	return o
+}
+
+func (o *folderOption) SetOption(logger *Logger) {
+	logger.folder = o.folder
+}

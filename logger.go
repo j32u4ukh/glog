@@ -307,6 +307,11 @@ func (l *Logger) Logout(level LogLevel, message string) error {
 	return nil
 }
 
+func (l *Logger) CheckCaller(skip int) {
+	pc, file, line, ok := runtime.Caller(skip)
+	fmt.Printf("(l *Logger) CheckCaller | skip: %d, pc: %d, file: %s, line: %d, ok: %v\n", skip, pc, file, line, ok)
+}
+
 // 初始化輸出結構
 func (l *Logger) initOutput() error {
 	_, err := os.Stat(l.folder)
