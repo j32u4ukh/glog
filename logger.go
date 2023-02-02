@@ -399,7 +399,19 @@ func (l *Logger) Logout(level LogLevel, message string) error {
 	return nil
 }
 
-func (l *Logger) CheckCaller() {
+// 可使用 runtime.FuncForPC(ptr) 獲得進一步的資訊
+func (l *Logger) CheckCaller(skip int) uintptr {
+	ptr, file, line, ok := runtime.Caller(skip)
+	fmt.Printf("(l *Logger) CheckCaller | skip: %d, pc: %d, file: %s, line: %d, ok: %v\n", skip, ptr, file, line, ok)
+
+	if ok {
+		return ptr
+	} else {
+		return 0
+	}
+}
+
+func (l *Logger) CheckCallers() {
 	var pc uintptr
 	var file string
 	var line, skip int = 0, 0
