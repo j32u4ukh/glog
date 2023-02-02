@@ -11,11 +11,10 @@ func main() {
 	logger.SetOptions(glog.DefaultOption(true, true), glog.UtcOption(8))
 	logger.SetLogLevel(glog.DebugLevel)
 
-	for t := 0; t < 12; t++ {
+	for t := 0; t < 50000; t++ {
 		logger.Debug("Hello Debug! t: %d", t)
 		logger.Info("Hello Info! t: %d", t)
-		logger.Warn("Hello Warn! t: %d", t)
-		logger.Error("Hello Error! t: %d", t)
+		// time.Sleep(1 * time.Second)
 	}
 
 	print(logger)
@@ -23,13 +22,20 @@ func main() {
 	obj := newObj()
 	obj.print("Hello Obj!")
 	glog.Flush()
+
+	// fi, err := os.Stat("log/not-struct-2023-01-29-00-00.log")
+	// if err == nil {
+	// 	fmt.Println("name:", fi.Name())
+	// 	fmt.Println("size:", fi.Size())
+	// 	fmt.Println("is dir:", fi.IsDir())
+	// 	fmt.Println("mode::", fi.Mode())
+	// 	fmt.Println("modTime:", fi.ModTime())
+	// }
 }
 
 func print(logger *glog.Logger) {
 	logger.Debug("print Debug!")
 	logger.Info("print Info!")
-	logger.Warn("print Warn!")
-	logger.Error("print Error!")
 }
 
 type Obj struct {

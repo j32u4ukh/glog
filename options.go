@@ -40,7 +40,7 @@ func (o *basicOption) SetOption(logger *Logger) {
 
 	if o.ToFile {
 		state |= TOFILE
-		logger.SetDaysInterval(1)
+		logger.SetShiftCondition(ShiftDayAndSize, 1, 10*MB)
 	} else {
 		state &^= TOFILE
 	}
@@ -82,7 +82,7 @@ func (o *defaultOption) SetOption(logger *Logger) {
 
 	logger.outputs[WarnLevel] |= TOFILE
 	logger.outputs[ErrorLevel] |= TOFILE
-	logger.SetDaysInterval(1)
+	logger.SetShiftCondition(ShiftDayAndSize, 1, 10*MB)
 }
 
 type utcOption struct {
