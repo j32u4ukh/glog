@@ -1,6 +1,10 @@
 package internal
 
-import "github.com/j32u4ukh/glog"
+import (
+	"time"
+
+	"github.com/j32u4ukh/glog"
+)
 
 var logger *glog.Logger
 
@@ -10,7 +14,12 @@ func Init(lg *glog.Logger) {
 }
 
 func Run() {
-	logger.Debug("Run in internal package.")
-	logger.Warn("Run in internal package.")
-	logger.Error("Run in internal package.")
+	for {
+		logger.Debug("Run in internal package.")
+		time.Sleep(500 * time.Millisecond)
+		logger.Warn("Run in internal package.")
+		time.Sleep(500 * time.Millisecond)
+		logger.Error("Run in internal package.")
+		time.Sleep(500 * time.Millisecond)
+	}
 }

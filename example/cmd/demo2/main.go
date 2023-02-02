@@ -16,5 +16,4 @@ func main() {
 	fmt.Printf("Name: %s\n", runtime.FuncForPC(ptr).Name())
 	internal.Init(logger)
 	internal.Run()
-	logger.Flush()
 }
