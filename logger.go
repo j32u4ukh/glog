@@ -450,7 +450,7 @@ func (l *Logger) whetherNeedUpdateOutputs(output string) bool {
 		needUpdate := l.getTime().After(l.date)
 
 		if needUpdate {
-			fmt.Println("(l *Logger) whetherNeedUpdateOutputs | 因已達時間間隔，即將換檔")
+			// fmt.Println("(l *Logger) whetherNeedUpdateOutputs | 因已達時間間隔，即將換檔")
 			switch l.shiftType {
 			case ShiftDay, ShiftDayAndSize:
 				l.setDaysInterval(l.timeInterval)
@@ -464,7 +464,7 @@ func (l *Logger) whetherNeedUpdateOutputs(output string) bool {
 			case ShiftDayAndSize, ShiftHourAndSize, ShiftSecondAndSize:
 				// 當前大小超過已超過大小限制
 				if l.cumSize >= l.sizeLimit {
-					fmt.Println("(l *Logger) whetherNeedUpdateOutputs | 因已達大小限制，即將換檔")
+					// fmt.Println("(l *Logger) whetherNeedUpdateOutputs | 因已達大小限制，即將換檔")
 					// 重置累加大小
 					l.cumSize = 0
 					needUpdate = true
