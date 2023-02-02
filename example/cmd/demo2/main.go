@@ -9,6 +9,7 @@ func main() {
 	logger := glog.GetLogger("log", "cmd-internal", glog.DebugLevel, false)
 	logger.SetOptions(glog.DefaultOption(true, true), glog.UtcOption(8))
 	logger.Debug("Start demo2...")
+	logger.CheckCaller()
 	internal.Init(logger)
 	internal.Run()
 	logger.Flush()

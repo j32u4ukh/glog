@@ -399,9 +399,20 @@ func (l *Logger) Logout(level LogLevel, message string) error {
 	return nil
 }
 
-func (l *Logger) CheckCaller(skip int) {
-	pc, file, line, ok := runtime.Caller(skip)
-	fmt.Printf("(l *Logger) CheckCaller | skip: %d, pc: %d, file: %s, line: %d, ok: %v\n", skip, pc, file, line, ok)
+func (l *Logger) CheckCaller() {
+	var pc uintptr
+	var file string
+	var line, skip int = 0, 0
+	ok := true
+
+	for ok {
+		pc, file, line, ok = runtime.Caller(skip)
+
+		if ok {
+			fmt.Printf("(l *Logger) CheckCaller | skip: %d, pc: %d, file: %s, line: %d, ok: %v\n", skip, pc, file, line, ok)
+			skip++
+		}
+	}
 }
 
 // 初始化輸出結構
