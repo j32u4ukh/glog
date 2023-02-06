@@ -40,7 +40,7 @@ func Flush() {
 	for _, logger := range loggerMap {
 		logger.Flush()
 	}
-	fmt.Printf("glog.Flush | 完成寫出")
+	fmt.Println("glog.Flush | 完成寫出")
 }
 
 // 退出時的處理

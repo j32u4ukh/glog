@@ -16,10 +16,10 @@ func Init(lg *glog.Logger) {
 func Run() {
 	for {
 		logger.Debug("Run in internal package.")
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 		logger.Warn("Run in internal package.")
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 		logger.Error("Run in internal package.")
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 	}
 }

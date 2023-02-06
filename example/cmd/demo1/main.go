@@ -6,9 +6,11 @@ import (
 
 func main() {
 	logger := glog.GetLogger("log", "not-struct", glog.DebugLevel, false)
-	// option1 := glog.BasicOption(glog.DebugLevel, true, true, true)
-	// option2 := glog.BasicOption(glog.InfoLevel, true, true, true)
 	logger.SetOptions(glog.DefaultOption(true, true), glog.UtcOption(8))
+	// option1 := glog.BasicOption(glog.DebugLevel, false, true, true)
+	// option2 := glog.BasicOption(glog.InfoLevel, false, true, true)
+	// logger.SetOptions(option1, option2, glog.UtcOption(8))
+	// logger.SetOptions(glog.DebugOption(), glog.UtcOption(8))
 	logger.SetLogLevel(glog.DebugLevel)
 
 	for t := 0; t < 50000; t++ {
@@ -19,8 +21,8 @@ func main() {
 
 	print(logger)
 
-	obj := newObj()
-	obj.print("Hello Obj!")
+	// obj := newObj()
+	// obj.print("Hello Obj!")
 	glog.Flush()
 
 	// fi, err := os.Stat("log/not-struct-2023-01-29-00-00.log")

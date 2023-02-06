@@ -3,6 +3,7 @@ package glog
 import (
 	"bufio"
 	"fmt"
+	"io/fs"
 	"io/ioutil"
 	"os"
 	"path"
@@ -13,6 +14,10 @@ import (
 
 	"github.com/pkg/errors"
 )
+
+type void struct{}
+
+var null void
 
 // 時間輸出格式
 const DISPLAYTIME string = "2006/01/02 15:04:05"
@@ -94,6 +99,27 @@ const (
 	ShiftDayAndSize
 )
 
+func (st ShiftType) String() string {
+	switch st {
+	case ShiftSecond:
+		return "ShiftSecond"
+	case ShiftHour:
+		return "ShiftHour"
+	case ShiftDay:
+		return "ShiftDay"
+	case ShiftSize:
+		return "ShiftSize"
+	case ShiftSecondAndSize:
+		return "ShiftSecondAndSize"
+	case ShiftHourAndSize:
+		return "ShiftHourAndSize"
+	case ShiftDayAndSize:
+		return "ShiftDayAndSize"
+	default:
+		return "None"
+	}
+}
+
 // ====================================================================================================
 // Logger
 // ====================================================================================================
@@ -106,6 +132,7 @@ type Logger struct {
 	// logger 的等級
 	level LogLevel
 	// UTC 時區
+	loc *time.Location
 	utc float32
 
 	// ==================================================
@@ -141,6 +168,8 @@ type Logger struct {
 	date time.Time
 
 	// ===== Log 檔案大小管理 =====
+	// 換檔索引值
+	nShift int32
 	// 每個 Log 檔的大小限制，超過後更新輸出位置
 	sizeLimit int64
 	// 累計輸出行數，每 CheckLines 行再檢查一次 Log 檔的大小限制是否超出
@@ -152,6 +181,7 @@ func newLogger(folder string, loggerName string, level LogLevel, callByStruct bo
 		folder:     folder,
 		loggerName: loggerName,
 		level:      level,
+		loc:        time.UTC,
 		utc:        0,
 		outputs: map[LogLevel]int{
 			DebugLevel: TOCONSOLE | FILEINFO,
@@ -163,8 +193,9 @@ func newLogger(folder string, loggerName string, level LogLevel, callByStruct bo
 		bufferSize:   4096,
 		files:        make([]*os.File, 2),
 		shiftType:    ShiftDay,
-		timeInterval: -1,
-		sizeLimit:    -1,
+		timeInterval: 0,
+		nShift:       0,
+		sizeLimit:    0,
 		cumSize:      0,
 	}
 	return l
@@ -196,6 +227,10 @@ func (l *Logger) SetBufferSize(size uint16) {
 }
 
 func (l *Logger) SetShiftCondition(shiftType ShiftType, times int64, size int64) {
+	// 重置累加大小
+	l.cumSize = 0
+
+	// 設置換檔類型
 	l.shiftType = shiftType
 	switch shiftType {
 	case ShiftSecond:
@@ -215,6 +250,7 @@ func (l *Logger) SetShiftCondition(shiftType ShiftType, times int64, size int64)
 	case ShiftDayAndSize:
 		l.setDaysInterval(times)
 		l.SetSizeLimit(size)
+	default:
 	}
 }
 
@@ -234,7 +270,7 @@ func (l *Logger) setDaysInterval(days int64) {
 		l.timeInterval = 105850
 	}
 	now := l.getTime()
-	date := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	date := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, l.loc)
 	l.date = date.Add(time.Duration(l.timeInterval * DayToNano))
 }
 
@@ -249,7 +285,7 @@ func (l *Logger) setHourInterval(hour int64) {
 		l.timeInterval = 2540400
 	}
 	now := l.getTime()
-	date := time.Date(now.Year(), now.Month(), now.Day(), now.Hour(), 0, 0, 0, nil)
+	date := time.Date(now.Year(), now.Month(), now.Day(), now.Hour(), 0, 0, 0, l.loc)
 	l.date = date.Add(time.Duration(l.timeInterval * HourToNano))
 }
 
@@ -261,66 +297,6 @@ func (l *Logger) setSencodInterval(second int64) {
 		l.timeInterval = second
 	}
 	l.date = l.getTime().Add(time.Duration(l.timeInterval * SecondToNano))
-}
-
-func (l *Logger) getFilePath() string {
-	var filePath, timeStamp string
-	// ==================================================
-	// 更新時間戳
-	// ==================================================
-	now := l.getTime()
-	switch l.shiftType {
-	case ShiftDay, ShiftDayAndSize:
-		t := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location()).UTC()
-		timeStamp = t.Format(FILENAMETIME)
-	case ShiftHour, ShiftHourAndSize:
-		t := time.Date(now.Year(), now.Month(), now.Day(), now.Hour(), 0, 0, 0, now.Location()).UTC()
-		timeStamp = t.Format(FILENAMETIME)
-	default:
-		timeStamp = now.Format(FILENAMETIME)
-	}
-	// ==================================================
-	// 根據時間戳，更新檔名
-	// ==================================================
-	switch l.shiftType {
-	case ShiftDayAndSize, ShiftHourAndSize, ShiftSecondAndSize, ShiftSize:
-		var isValidName bool
-		files, _ := ioutil.ReadDir(l.folder)
-		keepSearch := true
-		i := 0
-		fileName := fmt.Sprintf("%s-%s.log", l.loggerName, timeStamp)
-
-		for keepSearch {
-			isValidName = true
-
-			for _, file := range files {
-
-				if file.IsDir() {
-					continue
-				} else if fileName == file.Name() {
-					// TODO: 初始化輸出時，尚未獲得檔案大小，因此 whetherNeedUpdateOutputs 無法正確判斷
-					// if l.whetherNeedUpdateOutputs("") {
-					// 	isValidName = false
-					// }
-					isValidName = false
-					break
-				}
-			}
-
-			if isValidName {
-				keepSearch = false
-				filePath = path.Join(l.folder, fileName)
-			} else {
-				i++
-				fileName = fmt.Sprintf("%s-%s-%d.log", l.loggerName, timeStamp, i)
-			}
-		}
-
-	default:
-		filePath = path.Join(l.folder, fmt.Sprintf("%s-%s.log", l.loggerName, timeStamp))
-	}
-
-	return filePath
 }
 
 func (l *Logger) Debug(message string, a ...any) {
@@ -375,11 +351,12 @@ func (l *Logger) Logout(level LogLevel, message string) error {
 
 	// 是否輸出到檔案
 	if l.outputs[level]&TOFILE == TOFILE {
+		status := l.whetherNeedUpdateOutputs(output)
 
 		// 檢查是否需要更新輸出位置
-		if l.whetherNeedUpdateOutputs(output) {
+		if status != 0 {
 			// 更新輸出位置
-			err := l.updateOutput()
+			err := l.updateOutput(status)
 
 			if err != nil {
 				return errors.Wrap(err, "更新輸出位置時發生錯誤")
@@ -437,22 +414,13 @@ func (l *Logger) initOutput() error {
 		}
 	}
 
-	filePath := l.getFilePath()
-
-	// 檢查當前路徑檔案是否已存在
-	stat, err := os.Stat(filePath)
-
-	// 若已存在
-	if err == nil {
-		// 更新累積檔案大小
-		l.cumSize = stat.Size()
-		fmt.Printf("(l *Logger) initOutput | cumSize: %d, filePath: %s\n", l.cumSize, filePath)
-	}
+	filePath := l.getInitPath()
+	fmt.Printf("(l *Logger) initOutput | cumSize: %d, filePath: %s\n", l.cumSize, filePath)
 
 	l.files[0], err = os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
 
 	if err != nil {
-		return errors.Wrapf(err, "開啟輸出檔時發生錯誤, path: %s\n", l.getFilePath())
+		return errors.Wrapf(err, "開啟輸出檔時發生錯誤, path: %s\n", filePath)
 	}
 
 	l.writers[0] = bufio.NewWriterSize(l.files[0], int(l.bufferSize))
@@ -460,51 +428,162 @@ func (l *Logger) initOutput() error {
 	return nil
 }
 
-// 檢查是否需要更換輸出檔
-func (l *Logger) whetherNeedUpdateOutputs(output string) bool {
+func (l *Logger) getFilePath() string {
+	var filePath string
+	// ==================================================
+	// 更新時間戳
+	// ==================================================
+	timeStamp := l.getFileTime()
+
+	// ==================================================
+	// 根據時間戳，更新檔名
+	// ==================================================
+	switch l.shiftType {
+	case ShiftDayAndSize, ShiftHourAndSize, ShiftSecondAndSize, ShiftSize:
+		var fileName string
+
+		if l.nShift == 0 {
+			fmt.Printf("當前時間區段內首次取得路徑\n")
+			fileName = fmt.Sprintf("%s-%s.log", l.loggerName, timeStamp)
+		} else {
+			fileName = fmt.Sprintf("%s-%s-%d.log", l.loggerName, timeStamp, l.nShift)
+			fmt.Printf("第 %d 次取得路徑, fileName: %s\n", l.nShift, fileName)
+			l.nShift++
+		}
+
+		filePath = path.Join(l.folder, fileName)
+
+	default:
+		filePath = path.Join(l.folder, fmt.Sprintf("%s-%s.log", l.loggerName, timeStamp))
+	}
+
+	return filePath
+}
+
+func (l *Logger) getInitPath() string {
+	files, _ := ioutil.ReadDir(l.folder)
+	names := map[string]void{}
+	for _, file := range files {
+		if file.IsDir() {
+			continue
+		}
+		names[file.Name()] = null
+		fmt.Printf("(l *Logger) getInitPath | Existed file: %s\n", file.Name())
+	}
+
+	timeStamp := l.getFileTime()
+	fileName := fmt.Sprintf("%s-%s.log", l.loggerName, timeStamp)
+	var filePath string
+	var stat fs.FileInfo
+	var err error
+
+	// 檔名尚未存在，表示可以使用
+	if _, ok := names[fileName]; !ok {
+		filePath = path.Join(l.folder, fileName)
+		l.nShift = 1
+		return filePath
+	}
+
+	for {
+		fileName = fmt.Sprintf("%s-%s-%d.log", l.loggerName, timeStamp, l.nShift+1)
+
+		if _, ok := names[fileName]; !ok {
+			break
+		}
+
+		l.nShift++
+	}
+
+	if l.nShift == 0 {
+		fileName = fmt.Sprintf("%s-%s.log", l.loggerName, timeStamp)
+	} else {
+		fileName = fmt.Sprintf("%s-%s-%d.log", l.loggerName, timeStamp, l.nShift)
+	}
+
+	filePath = path.Join(l.folder, fileName)
+	fmt.Printf("(l *Logger) getInitPath | filePath1: %s\n", filePath)
+	stat, err = os.Stat(filePath)
+
+	// 若該檔名已存在
+	if err == nil {
+		// 更新累積檔案大小
+		l.cumSize = stat.Size()
+		status := l.whetherNeedUpdateOutputs("")
+		fmt.Printf("(l *Logger) getInitPath | status: %d, cumSize: %d, filePath: %s\n", status, l.cumSize, filePath)
+
+		// 若已達換檔達條件
+		if status != 0 {
+			l.cumSize = 0
+			l.nShift++
+			fileName = fmt.Sprintf("%s-%s-%d.log", l.loggerName, timeStamp, l.nShift)
+			filePath = path.Join(l.folder, fileName)
+		}
+	}
+
+	l.nShift++
+	fmt.Printf("(l *Logger) getInitPath | nShift: %d, cumSize: %d, filePath2: %s\n", l.nShift, l.cumSize, filePath)
+	return filePath
+}
+
+func (l *Logger) getFileTime() string {
+	var timeStamp string
+	now := l.getTime()
+	switch l.shiftType {
+	case ShiftDay, ShiftDayAndSize:
+		t := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, l.loc)
+		timeStamp = t.Format(FILENAMETIME)
+	case ShiftHour, ShiftHourAndSize:
+		t := time.Date(now.Year(), now.Month(), now.Day(), now.Hour(), 0, 0, 0, l.loc)
+		timeStamp = t.Format(FILENAMETIME)
+	default:
+		timeStamp = now.Format(FILENAMETIME)
+	}
+	return timeStamp
+}
+
+// 檢查是否需要更換輸出檔(0: 無須換檔; 1: 已達大小限制; 2: 已達時間間隔)
+func (l *Logger) whetherNeedUpdateOutputs(output string) byte {
 	if l.shiftType == ShiftNone {
 		// 未設置換檔條件，直接返回
-		return false
+		return 0
 	} else if l.shiftType == ShiftSize {
-		// 當前大小超過已超過大小限制
+		// 當前大小 是否已超過 大小限制
 		if l.cumSize >= l.sizeLimit {
-			// 重置累加大小
-			l.cumSize = 0
-			return true
+			// fmt.Printf("(l *Logger) whetherNeedUpdateOutputs | shiftType: %s, cumSize: %d, 因已達大小限制(%d)，即將換檔\n",
+			// 	l.shiftType, l.cumSize, l.sizeLimit)
+			return 1
 		}
-		return false
+		return 0
 	} else {
-		needUpdate := l.getTime().After(l.date)
-
-		if needUpdate {
-			// fmt.Println("(l *Logger) whetherNeedUpdateOutputs | 因已達時間間隔，即將換檔")
-			switch l.shiftType {
-			case ShiftDay, ShiftDayAndSize:
-				l.setDaysInterval(l.timeInterval)
-			case ShiftHour, ShiftHourAndSize:
-				l.setHourInterval(l.timeInterval)
-			case ShiftSecond, ShiftSecondAndSize:
-				l.setSencodInterval(l.timeInterval)
-			}
+		if l.getTime().After(l.date) {
+			// fmt.Printf("(l *Logger) whetherNeedUpdateOutputs | shiftType: %s, 因已達時間間隔，即將換檔", l.shiftType)
+			return 2
 		} else {
 			switch l.shiftType {
 			case ShiftDayAndSize, ShiftHourAndSize, ShiftSecondAndSize:
-				// 當前大小超過已超過大小限制
+				// 當前大小 是否已超過 大小限制
 				if l.cumSize >= l.sizeLimit {
-					// fmt.Println("(l *Logger) whetherNeedUpdateOutputs | 因已達大小限制，即將換檔")
-					// 重置累加大小
-					l.cumSize = 0
-					needUpdate = true
+					// fmt.Printf("(l *Logger) whetherNeedUpdateOutputs | shiftType: %s, cumSize: %d, 因已達大小限制(%d)，即將換檔\n",
+					// 	l.shiftType, l.cumSize, l.sizeLimit)
+					return 1
 				}
 			default:
 			}
+			return 0
 		}
-		return needUpdate
 	}
 }
 
 // 更新輸出位置
-func (l *Logger) updateOutput() error {
+func (l *Logger) updateOutput(status byte) error {
+	l.cumSize = 0
+
+	// 超過時間間隔限制
+	if status == 2 {
+		l.nShift = 0
+		l.SetShiftCondition(l.shiftType, l.timeInterval, l.sizeLimit)
+	}
+
 	var err error
 	idx := -1
 
@@ -549,12 +628,16 @@ func (l *Logger) Flush() {
 	}
 }
 
-func (l *Logger) getTime() time.Time {
-	var loc *time.Location
+func (l *Logger) setUtc(utc float32) {
+	l.utc = utc
+
 	if l.utc == -4 {
-		loc, _ = time.LoadLocation("America/Nipigon")
+		l.loc, _ = time.LoadLocation("America/Nipigon")
 	} else {
-		loc = time.FixedZone("", int(l.utc*60*60))
+		l.loc = time.FixedZone("", int(l.utc*60*60))
 	}
-	return time.Now().In(loc)
+}
+
+func (l *Logger) getTime() time.Time {
+	return time.Now().In(l.loc)
 }

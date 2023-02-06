@@ -1,5 +1,7 @@
 package glog
 
+import "fmt"
+
 type Option interface {
 	SetOption(*Logger)
 }
@@ -40,7 +42,8 @@ func (o *basicOption) SetOption(logger *Logger) {
 
 	if o.ToFile {
 		state |= TOFILE
-		logger.SetShiftCondition(ShiftDayAndSize, 1, 10*MB)
+		logger.SetShiftCondition(ShiftDayAndSize, 1, 5*MB)
+		fmt.Printf("(o *basicOption) SetOption | 5 MB: %d\n", 5*MB)
 	} else {
 		state &^= TOFILE
 	}
@@ -127,7 +130,8 @@ func (o *utcOption) SetOption(logger *Logger) {
 	} else if o.utc > 14 {
 		o.utc = 14
 	}
-	logger.utc = o.utc
+
+	logger.setUtc(o.utc)
 }
 
 type folderOption struct {
@@ -143,4 +147,18 @@ func FolderOption(folder string) *folderOption {
 
 func (o *folderOption) SetOption(logger *Logger) {
 	logger.folder = o.folder
+}
+
+type _debugOption struct {
+}
+
+func debugOption() *_debugOption {
+	o := &_debugOption{}
+	return o
+}
+
+func (o *_debugOption) SetOption(logger *Logger) {
+	logger.outputs[DebugLevel] = TOCONSOLE | TOFILE | FILEINFO
+	logger.outputs[InfoLevel] = TOCONSOLE | TOFILE | FILEINFO
+	logger.SetShiftCondition(ShiftSecondAndSize, 30, 2*KB)
 }
