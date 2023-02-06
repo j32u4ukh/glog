@@ -351,7 +351,7 @@ func (l *Logger) Logout(level LogLevel, message string) error {
 
 	// 是否輸出到檔案
 	if l.outputs[level]&TOFILE == TOFILE {
-		status := l.whetherNeedUpdateOutputs(output)
+		status := l.whetherNeedUpdateOutputs()
 
 		// 檢查是否需要更新輸出位置
 		if status != 0 {
@@ -508,7 +508,7 @@ func (l *Logger) getInitPath() string {
 	if err == nil {
 		// 更新累積檔案大小
 		l.cumSize = stat.Size()
-		status := l.whetherNeedUpdateOutputs("")
+		status := l.whetherNeedUpdateOutputs()
 		fmt.Printf("(l *Logger) getInitPath | status: %d, cumSize: %d, filePath: %s\n", status, l.cumSize, filePath)
 
 		// 若已達換檔達條件
@@ -542,7 +542,7 @@ func (l *Logger) getFileTime() string {
 }
 
 // 檢查是否需要更換輸出檔(0: 無須換檔; 1: 已達大小限制; 2: 已達時間間隔)
-func (l *Logger) whetherNeedUpdateOutputs(output string) byte {
+func (l *Logger) whetherNeedUpdateOutputs() byte {
 	if l.shiftType == ShiftNone {
 		// 未設置換檔條件，直接返回
 		return 0
