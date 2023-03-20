@@ -327,12 +327,17 @@ func (l *Logger) Logout(level LogLevel, message string) error {
 	if ok {
 		funcName := runtime.FuncForPC(pc).Name()
 		names := strings.Split(funcName, ".")
-		var label string
+		var label, pkg string
+		var temp []string
 
 		if len(names) == 2 {
-			label = fmt.Sprintf("[%s] %s", names[0], names[1])
+			temp = strings.Split(names[0], "/")
+			pkg = temp[len(temp)-1]
+			label = fmt.Sprintf("[%s] %s", pkg, names[1])
 		} else {
-			label = fmt.Sprintf("[%s] %s", names[1], names[2])
+			temp = strings.Split(names[1], "/")
+			pkg = temp[len(temp)-1]
+			label = fmt.Sprintf("[%s] %s", pkg, names[2])
 		}
 
 		if l.outputs[level]&FILEINFO == FILEINFO {
