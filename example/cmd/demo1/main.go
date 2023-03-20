@@ -5,7 +5,7 @@ import (
 )
 
 func main() {
-	logger := glog.GetLogger("log", "not-struct", glog.DebugLevel, false)
+	logger := glog.GetLogger("../log", "not-struct", glog.DebugLevel, false)
 	logger.SetOptions(glog.DefaultOption(true, true), glog.UtcOption(8))
 	// option1 := glog.BasicOption(glog.DebugLevel, false, true, true)
 	// option2 := glog.BasicOption(glog.InfoLevel, false, true, true)
