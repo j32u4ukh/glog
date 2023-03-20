@@ -9,8 +9,8 @@ import (
 )
 
 func main() {
-	logger := glog.GetLogger("log", "cmd-internal", glog.DebugLevel, false)
-	logger.SetOptions(glog.DefaultOption(true, true), glog.UtcOption(8))
+	logger := glog.GetLogger("../log", "cmd-internal", glog.DebugLevel, false)
+	logger.SetOptions(glog.DefaultOption(false, false), glog.UtcOption(8))
 	logger.Debug("Start demo2...")
 	ptr := logger.CheckCaller(1)
 	fmt.Printf("Name: %s\n", runtime.FuncForPC(ptr).Name())

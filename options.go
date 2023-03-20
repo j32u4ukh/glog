@@ -158,7 +158,7 @@ func debugOption() *_debugOption {
 }
 
 func (o *_debugOption) SetOption(logger *Logger) {
-	logger.outputs[DebugLevel] = TOCONSOLE | TOFILE | FILEINFO
-	logger.outputs[InfoLevel] = TOCONSOLE | TOFILE | FILEINFO
+	logger.outputs[DebugLevel] = TOCONSOLE | TOFILE | FILEINFO | LINEINFO
+	logger.outputs[InfoLevel] = TOCONSOLE | TOFILE | FILEINFO | LINEINFO
 	logger.SetShiftCondition(ShiftSecondAndSize, 30, 2*KB)
 }

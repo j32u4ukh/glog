@@ -28,10 +28,12 @@ const FILENAMETIME string = "2006-01-02-15-04"
 // 是否輸出到 Console 或 輸出成檔案，由低位到高位，以二進制分別表示
 // 1. 是否輸出到 Console
 // 2. 是否輸出成檔案
+// 3. 是否輸出檔案資訊
 // 3. 是否輸出行數資訊
-const TOCONSOLE int = 0b001
-const TOFILE int = 0b010
-const FILEINFO int = 0b100
+const TOCONSOLE int = 0b0001
+const TOFILE int = 0b0010
+const FILEINFO int = 0b0100
+const LINEINFO int = 0b1000
 
 // ====================================================================================================
 // 時間轉換
@@ -184,10 +186,10 @@ func newLogger(folder string, loggerName string, level LogLevel, callByStruct bo
 		loc:        time.UTC,
 		utc:        0,
 		outputs: map[LogLevel]int{
-			DebugLevel: TOCONSOLE | FILEINFO,
-			InfoLevel:  TOCONSOLE | FILEINFO,
-			WarnLevel:  TOCONSOLE | FILEINFO,
-			ErrorLevel: TOCONSOLE | FILEINFO,
+			DebugLevel: TOCONSOLE | LINEINFO,
+			InfoLevel:  TOCONSOLE | LINEINFO,
+			WarnLevel:  TOCONSOLE | FILEINFO | LINEINFO,
+			ErrorLevel: TOCONSOLE | FILEINFO | LINEINFO,
 		},
 		writers:      make([]*bufio.Writer, 2),
 		bufferSize:   4096,
@@ -327,16 +329,25 @@ func (l *Logger) Logout(level LogLevel, message string) error {
 	if ok {
 		funcName := runtime.FuncForPC(pc).Name()
 		names := strings.Split(funcName, ".")
-		var label string
+		var label, pkg string
+		var temp []string
 
 		if len(names) == 2 {
-			label = fmt.Sprintf("[%s] %s", names[0], names[1])
+			temp = strings.Split(names[0], "/")
+			pkg = temp[len(temp)-1]
+			label = fmt.Sprintf("[%s] %s", pkg, names[1])
 		} else {
-			label = fmt.Sprintf("[%s] %s", names[1], names[2])
+			temp = strings.Split(names[1], "/")
+			pkg = temp[len(temp)-1]
+			label = fmt.Sprintf("[%s] %s", pkg, names[2])
 		}
 
 		if l.outputs[level]&FILEINFO == FILEINFO {
-			message = fmt.Sprintf("%s | %s (%d)", message, file, line)
+			message = fmt.Sprintf("%s | %s", message, file)
+		}
+
+		if l.outputs[level]&LINEINFO == LINEINFO {
+			message = fmt.Sprintf("%s | (%d)", message, line)
 		}
 
 		output = fmt.Sprintf("%s %s | %s | %s\n", timeStamp, level, label, message)
