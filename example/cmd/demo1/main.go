@@ -5,7 +5,8 @@ import (
 )
 
 func main() {
-	logger := glog.GetLogger("../log", "not-struct", glog.DebugLevel, false)
+	logger := glog.SetLogger(0, "not-struct", glog.DebugLevel)
+	logger.SetFolder("../../log")
 	logger.SetOptions(glog.DefaultOption(true, true), glog.UtcOption(8))
 	// option1 := glog.BasicOption(glog.DebugLevel, false, true, true)
 	// option2 := glog.BasicOption(glog.InfoLevel, false, true, true)
@@ -46,7 +47,7 @@ type Obj struct {
 
 func newObj() *Obj {
 	obj := &Obj{
-		logger: glog.GetLogger("log", "Obj", glog.DebugLevel, false),
+		logger: glog.SetLogger(0, "Obj", glog.DebugLevel),
 	}
 	return obj
 }

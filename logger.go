@@ -145,6 +145,8 @@ type Logger struct {
 	// ==================================================
 	// 數據輸出用
 	// ==================================================
+	// 將 log 檔的建立，延後至第一筆輸出之前
+	outputInited bool
 	// 當前寫出數據用 Writer
 	writer *bufio.Writer
 	// 管理兩個 Writer，用於換檔時交替用
@@ -178,9 +180,9 @@ type Logger struct {
 	cumSize int64
 }
 
-func newLogger(folder string, loggerName string, level LogLevel, callByStruct bool, options ...Option) *Logger {
+func newLogger(loggerName string, level LogLevel, options ...Option) *Logger {
 	l := &Logger{
-		folder:     folder,
+		folder:     "",
 		loggerName: loggerName,
 		level:      level,
 		loc:        time.UTC,
@@ -191,6 +193,7 @@ func newLogger(folder string, loggerName string, level LogLevel, callByStruct bo
 			WarnLevel:  TOCONSOLE | FILEINFO | LINEINFO,
 			ErrorLevel: TOCONSOLE | FILEINFO | LINEINFO,
 		},
+		outputInited: false,
 		writers:      make([]*bufio.Writer, 2),
 		bufferSize:   4096,
 		files:        make([]*os.File, 2),
@@ -209,19 +212,15 @@ func (l *Logger) SetOptions(options ...Option) {
 	for _, option := range options {
 		option.SetOption(l)
 	}
-
-	// 檢查是否有輸出到檔案需求，若有，則檢查輸出資料夾是否存在。若資料夾不存在，則產生。
-	for _, state := range l.outputs {
-		if state&TOFILE == TOFILE {
-			l.initOutput()
-			break
-		}
-	}
 }
 
 // 設置 Log 輸出等級
 func (l *Logger) SetLogLevel(level LogLevel) {
 	l.level = level
+}
+
+func (l *Logger) SetFolder(folder string) {
+	l.folder = folder
 }
 
 func (l *Logger) SetBufferSize(size uint16) {
@@ -362,15 +361,23 @@ func (l *Logger) Logout(level LogLevel, message string) error {
 
 	// 是否輸出到檔案
 	if l.outputs[level]&TOFILE == TOFILE {
-		status := l.whetherNeedUpdateOutputs()
+		if l.outputInited {
+			status := l.whetherNeedUpdateOutputs()
 
-		// 檢查是否需要更新輸出位置
-		if status != 0 {
-			// 更新輸出位置
-			err := l.updateOutput(status)
+			// 檢查是否需要更新輸出位置
+			if status != 0 {
+				// 更新輸出位置
+				err := l.updateOutput(status)
+
+				if err != nil {
+					return errors.Wrap(err, "更新輸出位置時發生錯誤")
+				}
+			}
+		} else {
+			err := l.initOutput()
 
 			if err != nil {
-				return errors.Wrap(err, "更新輸出位置時發生錯誤")
+				return errors.Wrap(err, "Failed to initialize output.")
 			}
 		}
 
@@ -417,6 +424,10 @@ func (l *Logger) CheckCallers() {
 
 // 初始化輸出結構
 func (l *Logger) initOutput() error {
+	if l.folder == "" {
+		return errors.New("未定義輸出資料夾")
+	}
+
 	_, err := os.Stat(l.folder)
 
 	if err != nil {
@@ -436,6 +447,7 @@ func (l *Logger) initOutput() error {
 
 	l.writers[0] = bufio.NewWriterSize(l.files[0], int(l.bufferSize))
 	l.writer = l.writers[0]
+	l.outputInited = true
 	return nil
 }
 

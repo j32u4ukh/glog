@@ -28,9 +28,9 @@ func (w *Worker) Error(format string, args ...any) {
 	w.logger.Error(format, args...)
 }
 
-func Init(lg *glog.Logger) {
+func Init() {
 	worker = &Worker{
-		logger: lg,
+		logger: glog.GetLogger(0),
 	}
 	worker.Info("Init internal package.")
 }
