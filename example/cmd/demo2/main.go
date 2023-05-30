@@ -5,8 +5,8 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/j32u4ukh/glog"
-	"github.com/j32u4ukh/glog/example/internal"
+	"github.com/j32u4ukh/glog/v2"
+	"github.com/j32u4ukh/glog/v2/example/internal"
 )
 
 func main() {

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/j32u4ukh/glog"
+	"github.com/j32u4ukh/glog/v2"
 )
 
 func main() {
