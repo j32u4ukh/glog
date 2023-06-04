@@ -19,14 +19,16 @@ type basicOption struct {
 	ToConsole bool
 	ToFile    bool
 	FileInfo  bool
+	LineInfo  bool
 }
 
-func BasicOption(level LogLevel, toConsole bool, toFile bool, fileInfo bool) *basicOption {
+func BasicOption(level LogLevel, toConsole bool, toFile bool, fileInfo bool, lineInfo bool) *basicOption {
 	o := &basicOption{
 		Level:     level,
 		ToConsole: toConsole,
 		ToFile:    toFile,
 		FileInfo:  toFile,
+		LineInfo:  lineInfo,
 	}
 	return o
 }
@@ -52,6 +54,12 @@ func (o *basicOption) SetOption(logger *Logger) {
 		state |= FILEINFO
 	} else {
 		state &^= FILEINFO
+	}
+
+	if o.LineInfo {
+		state |= LINEINFO
+	} else {
+		state &^= LINEINFO
 	}
 
 	logger.outputs[o.Level] = state

@@ -136,6 +136,8 @@ type Logger struct {
 	// UTC 時區
 	loc *time.Location
 	utc float32
+	// 堆疊跳過層數(若自行封裝 Logger，則需多跳過一層到多層)
+	skip int
 
 	// ==================================================
 	// 各個 Level 的設定
@@ -187,6 +189,7 @@ func newLogger(loggerName string, level LogLevel, options ...Option) *Logger {
 		level:      level,
 		loc:        time.UTC,
 		utc:        0,
+		skip:       2,
 		outputs: map[LogLevel]int{
 			DebugLevel: TOCONSOLE | LINEINFO,
 			InfoLevel:  TOCONSOLE | LINEINFO,
@@ -217,6 +220,11 @@ func (l *Logger) SetOptions(options ...Option) {
 // 設置 Log 輸出等級
 func (l *Logger) SetLogLevel(level LogLevel) {
 	l.level = level
+}
+
+// 堆疊跳過層數(若自行封裝 Logger，則需多跳過一層到多層)
+func (l *Logger) SetSkip(skip int) {
+	l.skip = skip
 }
 
 func (l *Logger) SetFolder(folder string) {
