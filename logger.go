@@ -329,25 +329,23 @@ func (l *Logger) Logout(level LogLevel, message string) error {
 		return nil
 	}
 
-	pc, file, line, ok := runtime.Caller(2)
+	pc, file, line, ok := runtime.Caller(l.skip)
 	timeStamp := l.getTime().Format(DISPLAYTIME)
 	var output string
 
 	if ok {
 		funcName := runtime.FuncForPC(pc).Name()
 		names := strings.Split(funcName, ".")
-		var label, pkg string
-		var temp []string
+		length := len(names)
+		pkg := names[length-2]
 
-		if len(names) == 2 {
-			temp = strings.Split(names[0], "/")
-			pkg = temp[len(temp)-1]
-			label = fmt.Sprintf("[%s] %s", pkg, names[1])
+		if strings.Contains(pkg, "/") {
+			pkg = path.Base(pkg)
 		} else {
-			temp = strings.Split(names[1], "/")
-			pkg = temp[len(temp)-1]
-			label = fmt.Sprintf("[%s] %s", pkg, names[2])
+			pkg = pkg[1 : len(pkg)-1]
 		}
+
+		label := fmt.Sprintf("[%s] %s", pkg, names[length-1])
 
 		if l.outputs[level]&FILEINFO == FILEINFO {
 			message = fmt.Sprintf("%s | %s", message, file)
@@ -445,7 +443,7 @@ func (l *Logger) initOutput() error {
 	}
 
 	filePath := l.getInitPath()
-	fmt.Printf("(l *Logger) initOutput | cumSize: %d, filePath: %s\n", l.cumSize, filePath)
+	// fmt.Printf("(l *Logger) initOutput | cumSize: %d, filePath: %s\n", l.cumSize, filePath)
 
 	l.files[0], err = os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
 
@@ -474,11 +472,11 @@ func (l *Logger) getFilePath() string {
 		var fileName string
 
 		if l.nShift == 0 {
-			fmt.Printf("當前時間區段內首次取得路徑\n")
+			// fmt.Printf("當前時間區段內首次取得路徑\n")
 			fileName = fmt.Sprintf("%s-%s.log", l.loggerName, timeStamp)
 		} else {
 			fileName = fmt.Sprintf("%s-%s-%d.log", l.loggerName, timeStamp, l.nShift)
-			fmt.Printf("第 %d 次取得路徑, fileName: %s\n", l.nShift, fileName)
+			// fmt.Printf("第 %d 次取得路徑, fileName: %s\n", l.nShift, fileName)
 			l.nShift++
 		}
 
@@ -499,7 +497,7 @@ func (l *Logger) getInitPath() string {
 			continue
 		}
 		names[file.Name()] = null
-		fmt.Printf("(l *Logger) getInitPath | Existed file: %s\n", file.Name())
+		// fmt.Printf("(l *Logger) getInitPath | Existed file: %s\n", file.Name())
 	}
 
 	timeStamp := l.getFileTime()
@@ -532,7 +530,7 @@ func (l *Logger) getInitPath() string {
 	}
 
 	filePath = path.Join(l.folder, fileName)
-	fmt.Printf("(l *Logger) getInitPath | filePath1: %s\n", filePath)
+	// fmt.Printf("(l *Logger) getInitPath | filePath1: %s\n", filePath)
 	stat, err = os.Stat(filePath)
 
 	// 若該檔名已存在
@@ -540,7 +538,7 @@ func (l *Logger) getInitPath() string {
 		// 更新累積檔案大小
 		l.cumSize = stat.Size()
 		status := l.whetherNeedUpdateOutputs()
-		fmt.Printf("(l *Logger) getInitPath | status: %d, cumSize: %d, filePath: %s\n", status, l.cumSize, filePath)
+		// fmt.Printf("(l *Logger) getInitPath | status: %d, cumSize: %d, filePath: %s\n", status, l.cumSize, filePath)
 
 		// 若已達換檔達條件
 		if status != 0 {
@@ -552,7 +550,7 @@ func (l *Logger) getInitPath() string {
 	}
 
 	l.nShift++
-	fmt.Printf("(l *Logger) getInitPath | nShift: %d, cumSize: %d, filePath2: %s\n", l.nShift, l.cumSize, filePath)
+	// fmt.Printf("(l *Logger) getInitPath | nShift: %d, cumSize: %d, filePath2: %s\n", l.nShift, l.cumSize, filePath)
 	return filePath
 }
 

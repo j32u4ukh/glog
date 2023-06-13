@@ -10,7 +10,7 @@ import (
 var loggerMap map[byte]*Logger
 var exitChan chan os.Signal
 
-// TODO: v2.0.0 時，將建構子中的 callByStruct 移除
+// TODO: v2.0.2 時，取得 Logger ID; 可修改 Logger 在 loggerMap 對應的 idx
 // TODO: v2.1.0 時，換檔機制新增: 與開始執行時間點無關，每日零點起算，間隔數小時(0~5: 0; 6~11: 6; 12~17: 12; 18~23: 18)
 func init() {
 	loggerMap = make(map[byte]*Logger)
