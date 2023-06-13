@@ -39,7 +39,7 @@ func (w *Worker) run() {
 
 func Init() {
 	worker = &Worker{
-		logger: glog.GetLogger(0),
+		logger: glog.GetLogger(1),
 	}
 	worker.Info("Init internal package.")
 	worker.logger.SetSkip(3)

@@ -127,6 +127,8 @@ func (st ShiftType) String() string {
 // ====================================================================================================
 
 type Logger struct {
+	// 編號
+	idx byte
 	// 輸出資料夾
 	folder string
 	// logger 名稱
@@ -182,8 +184,9 @@ type Logger struct {
 	cumSize int64
 }
 
-func newLogger(loggerName string, level LogLevel, options ...Option) *Logger {
+func newLogger(idx byte, loggerName string, level LogLevel, options ...Option) *Logger {
 	l := &Logger{
+		idx:        idx,
 		folder:     "",
 		loggerName: loggerName,
 		level:      level,
@@ -207,6 +210,14 @@ func newLogger(loggerName string, level LogLevel, options ...Option) *Logger {
 		cumSize:      0,
 	}
 	return l
+}
+
+func (l *Logger) setIdx(idx byte) {
+	l.idx = idx
+}
+
+func (l *Logger) GetIdx() byte {
+	return l.idx
 }
 
 // 可在建構子之外，設置 Logger 各項參數

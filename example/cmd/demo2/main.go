@@ -14,6 +14,11 @@ func main() {
 	logger.SetFolder("../../log")
 	logger.SetOptions(glog.DefaultOption(false, false), glog.UtcOption(8))
 	logger.Debug("Start demo2...")
+	err := glog.UpdateLoggerIndex(0, 1, false)
+	if err != nil {
+		fmt.Printf("UpdateLoggerIndex err: %+v\n", err)
+		return
+	}
 	ptr := logger.CheckCaller(1)
 	fmt.Printf("Name: %s\n", runtime.FuncForPC(ptr).Name())
 	internal.Init()
