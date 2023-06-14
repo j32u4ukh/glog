@@ -352,7 +352,7 @@ func (l *Logger) Logout(level LogLevel, message string) error {
 
 		if strings.Contains(pkg, "/") {
 			pkg = path.Base(pkg)
-		} else {
+		} else if strings.HasPrefix(pkg, "(") && strings.HasSuffix(pkg, ")") {
 			pkg = pkg[1 : len(pkg)-1]
 		}
 
