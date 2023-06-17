@@ -12,7 +12,11 @@ import (
 func main() {
 	logger := glog.SetLogger(0, "cmd-internal", glog.DebugLevel)
 	logger.SetFolder("../../log")
-	logger.SetOptions(glog.DefaultOption(false, false), glog.UtcOption(8))
+	logger.SetOptions(glog.UtcOption(8))
+	logger.SetOptions(glog.BasicOption(glog.DebugLevel, true, false, true, true))
+	logger.SetOptions(glog.BasicOption(glog.InfoLevel, true, false, true, true))
+	logger.SetOptions(glog.BasicOption(glog.WarnLevel, true, true, true, true))
+	logger.SetOptions(glog.BasicOption(glog.ErrorLevel, true, true, true, true))
 	logger.Debug("Start demo2...")
 	err := glog.UpdateLoggerIndex(0, 1, false)
 	if err != nil {

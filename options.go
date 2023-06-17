@@ -27,7 +27,7 @@ func BasicOption(level LogLevel, toConsole bool, toFile bool, fileInfo bool, lin
 		Level:     level,
 		ToConsole: toConsole,
 		ToFile:    toFile,
-		FileInfo:  toFile,
+		FileInfo:  fileInfo,
 		LineInfo:  lineInfo,
 	}
 	return o
