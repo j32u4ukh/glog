@@ -28,11 +28,21 @@ func (w *Worker) Error(format string, args ...any) {
 	w.logger.Error(format, args...)
 }
 
+func (w *Worker) run() {
+	worker.Debug("Run in *Worker.")
+	time.Sleep(300 * time.Millisecond)
+	worker.Warn("Run in *Worker.")
+	time.Sleep(300 * time.Millisecond)
+	worker.Error("Run in *Worker.")
+	time.Sleep(300 * time.Millisecond)
+}
+
 func Init() {
 	worker = &Worker{
-		logger: glog.GetLogger(0),
+		logger: glog.GetLogger(1),
 	}
 	worker.Info("Init internal package.")
+	worker.logger.SetSkip(3)
 }
 
 func Run() {
@@ -42,6 +52,8 @@ func Run() {
 		worker.Warn("Run in internal package.")
 		time.Sleep(300 * time.Millisecond)
 		worker.Error("Run in internal package.")
+		time.Sleep(300 * time.Millisecond)
+		worker.run()
 		time.Sleep(300 * time.Millisecond)
 	}
 }
