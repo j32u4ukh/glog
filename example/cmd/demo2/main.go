@@ -11,12 +11,36 @@ import (
 
 func main() {
 	logger := glog.SetLogger(0, "cmd-internal", glog.DebugLevel)
-	logger.SetFolder("../../log")
 	logger.SetOptions(glog.UtcOption(8))
-	logger.SetOptions(glog.BasicOption(glog.DebugLevel, true, false, true, true))
-	logger.SetOptions(glog.BasicOption(glog.InfoLevel, true, false, true, true))
-	logger.SetOptions(glog.BasicOption(glog.WarnLevel, true, true, true, true))
-	logger.SetOptions(glog.BasicOption(glog.ErrorLevel, true, true, true, true))
+	logger.SetOptions(glog.FolderOption("../../log", glog.ShiftDayAndSize, 1, 5*glog.MB))
+	logger.SetOptions(glog.BasicOption(&glog.Option{
+		Level:     glog.DebugLevel,
+		ToConsole: true,
+		ToFile:    false,
+		FileInfo:  true,
+		LineInfo:  true,
+	}))
+	logger.SetOptions(glog.BasicOption(&glog.Option{
+		Level:     glog.InfoLevel,
+		ToConsole: true,
+		ToFile:    false,
+		FileInfo:  true,
+		LineInfo:  true,
+	}))
+	logger.SetOptions(glog.BasicOption(&glog.Option{
+		Level:     glog.WarnLevel,
+		ToConsole: true,
+		ToFile:    true,
+		FileInfo:  true,
+		LineInfo:  true,
+	}))
+	logger.SetOptions(glog.BasicOption(&glog.Option{
+		Level:     glog.ErrorLevel,
+		ToConsole: true,
+		ToFile:    true,
+		FileInfo:  true,
+		LineInfo:  true,
+	}))
 	logger.Debug("Start demo2...")
 	err := glog.UpdateLoggerIndex(0, 1, false)
 	if err != nil {

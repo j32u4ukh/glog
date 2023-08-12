@@ -2,8 +2,18 @@ package glog
 
 import "fmt"
 
-type Option interface {
+type IOption interface {
 	SetOption(*Logger)
+}
+
+type Option struct {
+	Level     LogLevel
+	ToConsole bool
+	ToFile    bool
+	FileInfo  bool
+	LineInfo  bool
+	Utc       float32
+	Folder    string
 }
 
 /*
@@ -22,13 +32,13 @@ type basicOption struct {
 	LineInfo  bool
 }
 
-func BasicOption(level LogLevel, toConsole bool, toFile bool, fileInfo bool, lineInfo bool) *basicOption {
+func BasicOption(option *Option) *basicOption {
 	o := &basicOption{
-		Level:     level,
-		ToConsole: toConsole,
-		ToFile:    toFile,
-		FileInfo:  fileInfo,
-		LineInfo:  lineInfo,
+		Level:     option.Level,
+		ToConsole: option.ToConsole,
+		ToFile:    option.ToFile,
+		FileInfo:  option.FileInfo,
+		LineInfo:  option.LineInfo,
 	}
 	return o
 }
@@ -44,8 +54,6 @@ func (o *basicOption) SetOption(logger *Logger) {
 
 	if o.ToFile {
 		state |= TOFILE
-		logger.SetShiftCondition(ShiftDayAndSize, 1, 5*MB)
-		fmt.Printf("(o *basicOption) SetOption | 5 MB: %d\n", 5*MB)
 	} else {
 		state &^= TOFILE
 	}
@@ -143,18 +151,27 @@ func (o *utcOption) SetOption(logger *Logger) {
 }
 
 type folderOption struct {
-	folder string
+	folder    string
+	shiftType ShiftType
+	times     int64
+	size      int64
 }
 
-func FolderOption(folder string) *folderOption {
+func FolderOption(folder string, shiftType ShiftType, times int64, size int64) *folderOption {
 	o := &folderOption{
-		folder: folder,
+		folder:    folder,
+		shiftType: shiftType,
+		times:     times,
+		size:      size,
 	}
 	return o
 }
 
 func (o *folderOption) SetOption(logger *Logger) {
 	logger.folder = o.folder
+
+	logger.SetShiftCondition(o.shiftType, o.times, o.size)
+	fmt.Printf("(o *folderOption) SetOption | shiftType: %d, times: %d, size: %d\n", o.shiftType, o.times, o.size)
 }
 
 type _debugOption struct {

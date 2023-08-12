@@ -184,7 +184,7 @@ type Logger struct {
 	cumSize int64
 }
 
-func newLogger(idx byte, loggerName string, level LogLevel, options ...Option) *Logger {
+func newLogger(idx byte, loggerName string, level LogLevel, options ...IOption) *Logger {
 	l := &Logger{
 		idx:        idx,
 		folder:     "",
@@ -221,7 +221,7 @@ func (l *Logger) GetIdx() byte {
 }
 
 // 可在建構子之外，設置 Logger 各項參數
-func (l *Logger) SetOptions(options ...Option) {
+func (l *Logger) SetOptions(options ...IOption) {
 	// 根據各個 Option 調整 Logger 參數
 	for _, option := range options {
 		option.SetOption(l)

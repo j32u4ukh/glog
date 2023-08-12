@@ -18,7 +18,7 @@ func init() {
 	go exitHandle()
 }
 
-func SetLogger(idx byte, loggerName string, level LogLevel, options ...Option) *Logger {
+func SetLogger(idx byte, loggerName string, level LogLevel, options ...IOption) *Logger {
 	var logger *Logger
 	var ok bool
 	if logger, ok = loggerMap[idx]; ok {
