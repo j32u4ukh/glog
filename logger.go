@@ -228,6 +228,15 @@ func (l *Logger) SetOptions(options ...IOption) {
 	}
 }
 
+// 可在建構子之外，設置 Logger 各項參數
+func (l *Logger) SetOutputOption(level LogLevel, option int, enable bool) {
+	if enable {
+		l.outputs[level] |= option
+	} else {
+		l.outputs[level] &^= option
+	}
+}
+
 // 設置 Log 輸出等級
 func (l *Logger) SetLogLevel(level LogLevel) {
 	l.level = level
@@ -360,9 +369,11 @@ func (l *Logger) Logout(level LogLevel, message string) error {
 
 		if l.outputs[level]&FILEINFO == FILEINFO {
 			message = fmt.Sprintf("%s | %s", message, file)
-		}
+			if l.outputs[level]&LINEINFO == LINEINFO {
+				message = fmt.Sprintf("%s (%d)", message, line)
+			}
 
-		if l.outputs[level]&LINEINFO == LINEINFO {
+		} else if l.outputs[level]&LINEINFO == LINEINFO {
 			message = fmt.Sprintf("%s | (%d)", message, line)
 		}
 

@@ -6,9 +6,9 @@ import (
 
 func main() {
 	logger := glog.SetLogger(0, "not-struct", glog.DebugLevel)
-	logger.SetFolder("../../log")
-	logger.SetOptions(glog.DefaultOption(true, true), glog.UtcOption(8))
+	logger.SetOptions(glog.DefaultOption(true, true, 8, "../../log"))
 	logger.SetLogLevel(glog.DebugLevel)
+	logger.SetSkip(3)
 
 	for t := 0; t < 50000; t++ {
 		logger.Debug("Hello Debug! t: %d", t)

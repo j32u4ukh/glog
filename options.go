@@ -1,6 +1,8 @@
 package glog
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type IOption interface {
 	SetOption(*Logger)
@@ -12,8 +14,6 @@ type Option struct {
 	ToFile    bool
 	FileInfo  bool
 	LineInfo  bool
-	Utc       float32
-	Folder    string
 }
 
 /*
@@ -44,64 +44,45 @@ func BasicOption(option *Option) *basicOption {
 }
 
 func (o *basicOption) SetOption(logger *Logger) {
-	state := logger.outputs[o.Level]
-
-	if o.ToConsole {
-		state |= TOCONSOLE
-	} else {
-		state &^= TOCONSOLE
-	}
-
-	if o.ToFile {
-		state |= TOFILE
-	} else {
-		state &^= TOFILE
-	}
-
-	if o.FileInfo {
-		state |= FILEINFO
-	} else {
-		state &^= FILEINFO
-	}
-
-	if o.LineInfo {
-		state |= LINEINFO
-	} else {
-		state &^= LINEINFO
-	}
-
-	logger.outputs[o.Level] = state
+	logger.SetOutputOption(o.Level, TOCONSOLE, o.ToConsole)
+	logger.SetOutputOption(o.Level, TOFILE, o.ToFile)
+	logger.SetOutputOption(o.Level, FILEINFO, o.FileInfo)
+	logger.SetOutputOption(o.Level, LINEINFO, o.LineInfo)
 }
 
 type defaultOption struct {
 	debugToFile bool
 	infoToFile  bool
+	utc         *utcOption
+	folder      string
 }
 
-func DefaultOption(debugToFile bool, infoToFile bool) *defaultOption {
+func DefaultOption(debugToFile bool, infoToFile bool, utc float32, folder string) *defaultOption {
 	o := &defaultOption{
 		debugToFile: debugToFile,
 		infoToFile:  infoToFile,
+		utc:         UtcOption(utc),
+		folder:      folder,
 	}
 	return o
 }
 
 func (o *defaultOption) SetOption(logger *Logger) {
-	if o.debugToFile {
-		logger.outputs[DebugLevel] |= TOFILE
-	} else {
-		logger.outputs[DebugLevel] &^= TOFILE
-	}
-
-	if o.infoToFile {
-		logger.outputs[InfoLevel] |= TOFILE
-	} else {
-		logger.outputs[InfoLevel] &^= TOFILE
-	}
-
-	logger.outputs[WarnLevel] |= TOFILE
-	logger.outputs[ErrorLevel] |= TOFILE
+	logger.SetOutputOption(DebugLevel, TOFILE, o.debugToFile)
+	logger.SetOutputOption(InfoLevel, TOFILE, o.infoToFile)
+	logger.SetOutputOption(WarnLevel, TOFILE, true)
+	logger.SetOutputOption(ErrorLevel, TOFILE, true)
 	logger.SetShiftCondition(ShiftDayAndSize, 1, 10*MB)
+
+	for level := range logger.outputs {
+		logger.SetOutputOption(level, FILEINFO, true)
+		logger.SetOutputOption(level, LINEINFO, true)
+	}
+
+	o.utc.SetOption(logger)
+
+	folder := FolderOption(o.folder, ShiftDayAndSize, 1, 10*MB)
+	folder.SetOption(logger)
 }
 
 type utcOption struct {
@@ -146,7 +127,6 @@ func (o *utcOption) SetOption(logger *Logger) {
 	} else if o.utc > 14 {
 		o.utc = 14
 	}
-
 	logger.setUtc(o.utc)
 }
 
@@ -183,7 +163,7 @@ func debugOption() *_debugOption {
 }
 
 func (o *_debugOption) SetOption(logger *Logger) {
-	logger.outputs[DebugLevel] = TOCONSOLE | TOFILE | FILEINFO | LINEINFO
-	logger.outputs[InfoLevel] = TOCONSOLE | TOFILE | FILEINFO | LINEINFO
+	logger.SetOutputOption(DebugLevel, TOCONSOLE|TOFILE|FILEINFO|LINEINFO, true)
+	logger.SetOutputOption(InfoLevel, TOCONSOLE|TOFILE|FILEINFO|LINEINFO, true)
 	logger.SetShiftCondition(ShiftSecondAndSize, 30, 2*KB)
 }
