@@ -49,7 +49,7 @@ func UpdateLoggerIndex(idx1 byte, idx2 byte, swap bool) error {
 		loggerMap[idx1] = logger2
 		logger2.setIdx(idx1)
 	} else {
-		if logger2, ok = loggerMap[idx2]; ok {
+		if _, ok = loggerMap[idx2]; ok {
 			return fmt.Errorf("已定義 Logger %d", idx2)
 		}
 		delete(loggerMap, idx1)
